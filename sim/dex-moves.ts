@@ -584,6 +584,7 @@ export class DataMove extends BasicEffect implements Readonly<BasicEffect & Move
 			} else if (this.num >= 1) {
 				this.gen = 1;
 			}
+			if (this.isMax) this.gen = 8;
 		}
 	}
 }
