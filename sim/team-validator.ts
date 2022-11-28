@@ -683,11 +683,7 @@ export class TeamValidator {
 								if (set.level < (eventInfo.level || 0) ||
 									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) ||
 									dex.gen < eventInfo.generation) continue;
-								if (eventInfo.generation < 3 && dex.gen > 2) {
-									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
-								} else {
-									setSources.sources.push(eventInfo.generation + 'S' + event + ' ' + checkedSpecies.id);
-								}
+								setSources.sources.push(eventInfo.generation + 'S' + event + ' ' + checkedSpecies.id);
 								setSources.sourcesBefore = 0;
 								setSources.isUnderleveled = checkedSpecies;
 							}
