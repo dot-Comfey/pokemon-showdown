@@ -678,6 +678,7 @@ export class TeamValidator {
 					for (const checkedSpecies of checkedPokemon) {
 						const learnset = dex.species.getLearnsetData(checkedSpecies.id);
 						if (learnset.eventData) {
+							// eslint-disable-next-line no-for-in-array
 							for (const event in learnset.eventData) {
 								const eventInfo = learnset.eventData[event];
 								if (set.level < (eventInfo.level || 0) ||
