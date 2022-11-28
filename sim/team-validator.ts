@@ -92,6 +92,8 @@ export class PokemonSources {
 	restrictiveMoves?: string[];
 	/** Obscure learn methods */
 	restrictedMove?: ID;
+	/** If underleveled, the original species it comes from */
+	isUnderleveled?: Species;
 
 	constructor(sourcesBefore = 0, sourcesAfter = 0) {
 		this.sources = [];
@@ -645,11 +647,77 @@ export class TeamValidator {
 			if (problem) problems.push(problem);
 		}
 
+		const learnsetSpecies = dex.species.getLearnsetData(outOfBattleSpecies.id);
+
+		let isFromRBYEncounter = false;
+		if (this.gen === 1 && ruleTable.has('obtainablemisc') && !this.ruleTable.has('allowtradeback')) {
+			let lowestEncounterLevel;
+			for (const encounter of learnsetSpecies.encounters || []) {
+				if (encounter.generation !== 1) continue;
+				if (!encounter.level) continue;
+				if (lowestEncounterLevel && encounter.level > lowestEncounterLevel) continue;
+
+				lowestEncounterLevel = encounter.level;
+			}
+
+			if (lowestEncounterLevel) {
+				if (set.level < lowestEncounterLevel) {
+					problems.push(`${name} is not obtainable at levels below ${lowestEncounterLevel} in Gen 1.`);
+				}
+				isFromRBYEncounter = true;
+			}
+		}
+		if (!isFromRBYEncounter && ruleTable.has('obtainablemisc')) {
+			let evoSpecies = species;
+			while (evoSpecies.prevo) {
+				if (set.level < (evoSpecies.evoLevel || 0)) {
+					// Treat an underleveled Pokemon like an event Pokemon
+					// Gen 2 underleveled Pokemon should be treated as Virtual Console transfer Pokemon
+					let checkedPokemon = [species];
+					if (evoSpecies !== species) checkedPokemon.push(evoSpecies);
+					for (const i in checkedPokemon) {
+						const learnset = dex.species.getLearnsetData(checkedPokemon[i].id);
+						if (learnset.eventData) {
+							for (const event in learnset.eventData) {
+								const eventInfo = learnset.eventData[event];
+								if (set.level < (eventInfo.level || 0) || (dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || dex.gen < eventInfo.generation) continue;
+								if (eventInfo.generation < 3 && dex.gen > 2) {
+									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
+								} else {
+									setSources.sources.push(eventInfo.generation + 'S' + event + ' ' + checkedPokemon[i].id);
+								}
+								setSources.sourcesBefore = 0;
+								setSources.isUnderleveled = checkedPokemon[i];
+							}
+						}
+						if (learnset.encounters) {
+							for (const event in learnset.encounters) {
+								const eventInfo = learnset.encounters[event];
+								if (set.level < (eventInfo.level || 0) || (dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || dex.gen < eventInfo.generation) continue;
+								if (eventInfo.generation < 3 && dex.gen > 2) {
+									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
+								} else {
+									setSources.sources.push(eventInfo.generation + 'U');
+								}
+								setSources.sourcesBefore = 0;
+								setSources.isUnderleveled = checkedPokemon[i];
+							}
+						}
+					}
+					if (!setSources.sources.length) {
+						problems.push(`${name} must be at least level ${evoSpecies.evoLevel} to be evolved.`);
+					}
+					break;
+				}
+				evoSpecies = dex.species.get(evoSpecies.prevo);
+			}
+		}
+		console.log(setSources);
+
 		if (ruleTable.has('obtainablemoves')) {
 			problems.push(...this.validateMoves(outOfBattleSpecies, set.moves, setSources, set, name));
 		}
 
-		const learnsetSpecies = dex.species.getLearnsetData(outOfBattleSpecies.id);
 		let eventOnlyData;
 
 		if (!setSources.sourcesBefore && setSources.sources.length) {
@@ -710,36 +778,6 @@ export class TeamValidator {
 						if (eventProblems) problems.push(...eventProblems);
 					}
 				}
-			}
-		}
-
-		let isFromRBYEncounter = false;
-		if (this.gen === 1 && ruleTable.has('obtainablemisc') && !this.ruleTable.has('allowtradeback')) {
-			let lowestEncounterLevel;
-			for (const encounter of learnsetSpecies.encounters || []) {
-				if (encounter.generation !== 1) continue;
-				if (!encounter.level) continue;
-				if (lowestEncounterLevel && encounter.level > lowestEncounterLevel) continue;
-
-				lowestEncounterLevel = encounter.level;
-			}
-
-			if (lowestEncounterLevel) {
-				if (set.level < lowestEncounterLevel) {
-					problems.push(`${name} is not obtainable at levels below ${lowestEncounterLevel} in Gen 1.`);
-				}
-				isFromRBYEncounter = true;
-			}
-		}
-		if (!isFromRBYEncounter && ruleTable.has('obtainablemisc')) {
-			// FIXME: Event pokemon given at a level under what it normally can be attained at gives a false positive
-			let evoSpecies = species;
-			while (evoSpecies.prevo) {
-				if (set.level < (evoSpecies.evoLevel || 0)) {
-					problems.push(`${name} must be at least level ${evoSpecies.evoLevel} to be evolved.`);
-					break;
-				}
-				evoSpecies = dex.species.get(evoSpecies.prevo);
 			}
 		}
 
@@ -1095,6 +1133,9 @@ export class TeamValidator {
 			}
 			if (because) throw new Error(`Wrong place to get an egg incompatibility message`);
 			return true;
+		} else if (source.charAt(1) === 'U') {
+			// Source 'U' is for underleveled Pokemon and shouldn't be event-restricted
+			return null;
 		} else {
 			throw new Error(`Unidentified source ${source} passed to validateSource`);
 		}
@@ -1705,6 +1746,7 @@ export class TeamValidator {
 
 		const fastReturn = !because;
 		if (eventData.from) from = `from ${eventData.from}`;
+		if (setSources.isUnderleveled) because = ` because it is an underleveled Pokemon`;
 		const etc = `${because} ${from}`;
 
 		const problems = [];
@@ -2059,6 +2101,13 @@ export class TeamValidator {
 					//   teach it, and transfer it to the current gen.)
 
 					const learnedGen = parseInt(learned.charAt(0));
+					if (setSources.isUnderleveled && babyOnly && species !== setSources.isUnderleveled && !(learned.charAt(1) === 'E' && learnedGen >= 8)) {
+						if (!cantLearnReason) {
+							cantLearnReason = `is only learned by ${species}, which it can't learn as an underleveled Pokemon.`;
+						}
+						continue;
+					}
+
 					if (learnedGen < this.minSourceGen) {
 						if (!cantLearnReason) {
 							cantLearnReason = `can't be transferred from Gen ${learnedGen} to ${this.minSourceGen}.`;
@@ -2125,8 +2174,8 @@ export class TeamValidator {
 						}
 					}
 
-					// Gen 8 egg moves can be taught to any pokemon from any source
-					if (learned === '8E' || 'LMTR'.includes(learned.charAt(1))) {
+					// Gen 8+ egg moves can be taught to any pokemon from any source
+					if ((learned.charAt(1) === 'E' && learnedGen >= 8) || 'LMTR'.includes(learned.charAt(1))) {
 						if (learnedGen === dex.gen && learned.charAt(1) !== 'R') {
 							// current-gen level-up, TM or tutor moves:
 							//   always available
@@ -2242,6 +2291,7 @@ export class TeamValidator {
 			// prevents a crash if OMs override `checkCanLearn` to keep validating after an error
 			setSources.sources = backupSources;
 			setSources.sourcesBefore = backupSourcesBefore;
+			if (setSources.isUnderleveled) return `'s move ${move.name} is incompatible with its underleveled origin.`;
 			return `'s moves ${(setSources.restrictiveMoves || []).join(', ')} are incompatible.`;
 		}
 
