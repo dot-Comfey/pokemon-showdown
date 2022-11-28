@@ -678,8 +678,8 @@ export class TeamValidator {
 					for (const checkedSpecies of checkedPokemon) {
 						const learnset = dex.species.getLearnsetData(checkedSpecies.id);
 						if (learnset.eventData) {
-							for (const event of learnset.eventData) {
-								const eventInfo = event;
+							for (const event in learnset.eventData) {
+								const eventInfo = learnset.eventData[event];
 								if (set.level < (eventInfo.level || 0) ||
 									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) ||
 									dex.gen < eventInfo.generation) continue;
@@ -690,14 +690,13 @@ export class TeamValidator {
 						}
 						if (learnset.encounters) {
 							for (const event of learnset.encounters) {
-								const eventInfo = event;
-								if (set.level < (eventInfo.level || 0) ||
-									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) ||
-									dex.gen < eventInfo.generation) continue;
-								if (eventInfo.generation < 3 && dex.gen > 2) {
+								if (set.level < (event.level || 0) ||
+									(dex.gen < 7 && dex.gen > 2 && event.generation < 3) ||
+									dex.gen < event.generation) continue;
+								if (event.generation < 3 && dex.gen > 2) {
 									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
 								} else {
-									setSources.sources.push(eventInfo.generation + 'U');
+									setSources.sources.push(event.generation + 'U');
 								}
 								setSources.sourcesBefore = 0;
 								setSources.isUnderleveled = checkedSpecies;
