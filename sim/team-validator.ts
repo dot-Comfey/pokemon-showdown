@@ -680,8 +680,8 @@ export class TeamValidator {
 						if (learnset.eventData) {
 							for (const event of learnset.eventData) {
 								const eventInfo = event;
-								if (set.level < (eventInfo.level || 0) || 
-									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || 
+								if (set.level < (eventInfo.level || 0) ||
+									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) ||
 									dex.gen < eventInfo.generation) continue;
 								if (eventInfo.generation < 3 && dex.gen > 2) {
 									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
@@ -695,8 +695,8 @@ export class TeamValidator {
 						if (learnset.encounters) {
 							for (const event of learnset.encounters) {
 								const eventInfo = event;
-								if (set.level < (eventInfo.level || 0) || 
-									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || 
+								if (set.level < (eventInfo.level || 0) ||
+									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) ||
 									dex.gen < eventInfo.generation) continue;
 								if (eventInfo.generation < 3 && dex.gen > 2) {
 									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
@@ -2104,7 +2104,7 @@ export class TeamValidator {
 					//   teach it, and transfer it to the current gen.)
 
 					const learnedGen = parseInt(learned.charAt(0));
-					if (setSources.isUnderleveled && babyOnly && species !== setSources.isUnderleveled && 
+					if (setSources.isUnderleveled && babyOnly && species !== setSources.isUnderleveled &&
 						!(learned.charAt(1) === 'E' && learnedGen >= 8)) {
 						if (!cantLearnReason) {
 							cantLearnReason = `is only learned by ${species}, which it can't learn as an underleveled Pokemon.`;
