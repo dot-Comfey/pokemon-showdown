@@ -673,34 +673,38 @@ export class TeamValidator {
 				if (set.level < (evoSpecies.evoLevel || 0)) {
 					// Treat an underleveled Pokemon like an event Pokemon
 					// Gen 2 underleveled Pokemon should be treated as Virtual Console transfer Pokemon
-					let checkedPokemon = [species];
+					const checkedPokemon = [species];
 					if (evoSpecies !== species) checkedPokemon.push(evoSpecies);
-					for (const i in checkedPokemon) {
-						const learnset = dex.species.getLearnsetData(checkedPokemon[i].id);
+					for (const checkedSpecies of checkedPokemon) {
+						const learnset = dex.species.getLearnsetData(checkedSpecies.id);
 						if (learnset.eventData) {
-							for (const event in learnset.eventData) {
-								const eventInfo = learnset.eventData[event];
-								if (set.level < (eventInfo.level || 0) || (dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || dex.gen < eventInfo.generation) continue;
+							for (const event of learnset.eventData) {
+								const eventInfo = event;
+								if (set.level < (eventInfo.level || 0) || 
+									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || 
+									dex.gen < eventInfo.generation) continue;
 								if (eventInfo.generation < 3 && dex.gen > 2) {
 									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
 								} else {
-									setSources.sources.push(eventInfo.generation + 'S' + event + ' ' + checkedPokemon[i].id);
+									setSources.sources.push(eventInfo.generation + 'S' + event + ' ' + checkedSpecies.id);
 								}
 								setSources.sourcesBefore = 0;
-								setSources.isUnderleveled = checkedPokemon[i];
+								setSources.isUnderleveled = checkedSpecies;
 							}
 						}
 						if (learnset.encounters) {
-							for (const event in learnset.encounters) {
-								const eventInfo = learnset.encounters[event];
-								if (set.level < (eventInfo.level || 0) || (dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || dex.gen < eventInfo.generation) continue;
+							for (const event of learnset.encounters) {
+								const eventInfo = event;
+								if (set.level < (eventInfo.level || 0) || 
+									(dex.gen < 7 && dex.gen > 2 && eventInfo.generation < 3) || 
+									dex.gen < eventInfo.generation) continue;
 								if (eventInfo.generation < 3 && dex.gen > 2) {
 									if (!setSources.sources.includes('7V')) setSources.sources.push('7V');
 								} else {
 									setSources.sources.push(eventInfo.generation + 'U');
 								}
 								setSources.sourcesBefore = 0;
-								setSources.isUnderleveled = checkedPokemon[i];
+								setSources.isUnderleveled = checkedSpecies;
 							}
 						}
 					}
@@ -712,7 +716,6 @@ export class TeamValidator {
 				evoSpecies = dex.species.get(evoSpecies.prevo);
 			}
 		}
-		console.log(setSources);
 
 		if (ruleTable.has('obtainablemoves')) {
 			problems.push(...this.validateMoves(outOfBattleSpecies, set.moves, setSources, set, name));
@@ -2101,7 +2104,8 @@ export class TeamValidator {
 					//   teach it, and transfer it to the current gen.)
 
 					const learnedGen = parseInt(learned.charAt(0));
-					if (setSources.isUnderleveled && babyOnly && species !== setSources.isUnderleveled && !(learned.charAt(1) === 'E' && learnedGen >= 8)) {
+					if (setSources.isUnderleveled && babyOnly && species !== setSources.isUnderleveled && 
+						!(learned.charAt(1) === 'E' && learnedGen >= 8)) {
 						if (!cantLearnReason) {
 							cantLearnReason = `is only learned by ${species}, which it can't learn as an underleveled Pokemon.`;
 						}
