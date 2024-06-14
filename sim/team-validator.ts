@@ -2437,6 +2437,7 @@ export class TeamValidator {
 				}
 			}
 
+			let canUseHomeRelearner = false;
 			for (let learned of sources) {
 				// Every `learned` represents a single way a pokemon might
 				// learn a move. This can be handled one of several ways:
@@ -2455,7 +2456,8 @@ export class TeamValidator {
 				//   teach it, and transfer it to the current gen.)
 
 				const learnedGen = parseInt(learned.charAt(0));
-				if (learnedGen < this.minSourceGen) {
+				if (learnedGen >= 9 && learnedGen <= dex.gen) canUseHomeRelearner = true;
+				if (learnedGen < this.minSourceGen && !canUseHomeRelearner) {
 					if (!cantLearnReason) {
 						cantLearnReason = `can't be transferred from Gen ${learnedGen} to ${this.minSourceGen}.`;
 					}
@@ -2537,6 +2539,7 @@ export class TeamValidator {
 				// Gen 8+ egg moves can be taught to any pokemon from any source
 				if (learnedGen >= 8 && learned.charAt(1) === 'E' && learned.slice(1) !== 'Eany' &&
 					learned.slice(1) !== 'Epomeg' || 'LMTR'.includes(learned.charAt(1))) {
+					if (learnedGen === 8 && canUseHomeRelearner) return null;
 					if (learnedGen === dex.gen && learned.charAt(1) !== 'R') {
 						// current-gen level-up, TM or tutor moves:
 						//   always available
