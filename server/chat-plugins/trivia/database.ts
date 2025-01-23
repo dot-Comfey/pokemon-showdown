@@ -568,10 +568,10 @@ export class TriviaSQLiteDatabase implements TriviaDatabase {
 			`INSERT OR REPLACE INTO trivia_leaderboard (userid, score, total_points, total_correct_answers, leaderboard) VALUES (?, ?, ?, ?, ?) `
 		);
 		this.questionInsertion = await Chat.database.prepare(
-			`INSERT OR IGNORE INTO trivia_questions (question, category, added_at, userid, is_submission) VALUES (?, ?, ?, ?, ?)`
+			`INSERT OR REPLACE INTO trivia_questions (question, category, added_at, userid, is_submission) VALUES (?, ?, ?, ?, ?)`
 		);
 		this.answerInsertion = await Chat.database.prepare(
-			`INSERT INTO trivia_answers (question_id, answer) VALUES (?, ?)`
+			`INSERT OR REPLACE INTO trivia_answers (question_id, answer) VALUES (?, ?)`
 		);
 		this.gameHistoryInsertion = await Chat.database.prepare(
 			`INSERT INTO trivia_game_history (mode, length, category, time, creator, gives_points) VALUES (?, ?, ?, ?, ?, ?)`
