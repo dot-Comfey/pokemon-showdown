@@ -2598,6 +2598,7 @@ export class TeamValidator {
 			return ` can't learn any moves at all.`;
 		}
 
+		let allowIncompatibleMsgOverride = true;
 		for (const { species, learnset } of fullLearnset) {
 			if (dex.gen <= 2 && species.gen === 1) tradebackEligible = true;
 			const checkingPrevo = species.baseSpecies !== originalSpecies.baseSpecies;
@@ -2646,14 +2647,6 @@ export class TeamValidator {
 
 				const learnedGen = parseInt(learned.charAt(0));
 				if (formeCantInherit && (learned.charAt(1) !== 'E' || learnedGen < 9)) continue;
-				if (setSources.learnsetDomain && !setSources.learnsetDomain.includes(`${learnedGen}${toID(species.baseSpecies)}`) &&
-					(learned.charAt(1) !== 'E' || learnedGen < 8)
-				) {
-					if (!cantLearnReason) {
-						cantLearnReason = `is incompatible with ${(setSources.restrictiveMoves || []).join(', ')}.`;
-					}
-					continue;
-				}
 				if (learnedGen < this.minSourceGen && !canUseHomeRelearner) {
 					if (!cantLearnReason) {
 						cantLearnReason = `can't be transferred from Gen ${learnedGen} to ${this.minSourceGen}.`;
@@ -2666,6 +2659,15 @@ export class TeamValidator {
 					}
 					continue;
 				}
+				if (setSources.learnsetDomain && !setSources.learnsetDomain.includes(`${learnedGen}${toID(species.baseSpecies)}`) &&
+					(learned.charAt(1) !== 'E' || learnedGen < 8)
+				) {
+					if (!cantLearnReason || allowIncompatibleMsgOverride) {
+						cantLearnReason = `is incompatible with ${(setSources.restrictiveMoves || []).join(', ')}.`;
+					}
+					continue;
+				}
+				allowIncompatibleMsgOverride = false;
 
 				if (learnedGen === 9 && learned.charAt(1) !== 'S') canUseHomeRelearner = true;
 
